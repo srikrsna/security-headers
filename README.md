@@ -1,4 +1,4 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/srikrsna/security-headers)](https://goreportcard.com/report/github.com/srikrsna/security-headers) [![Build Status](https://travis-ci.org/srikrsna/security-headers.svg?branch=master)](https://travis-ci.org/srikrsna/security-headers) [![Coverage Status](https://coveralls.io/repos/github/srikrsna/security-headers/badge.svg?branch=master)](https://coveralls.io/github/srikrsna/security-headers?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/srikrsna/security-headers)](https://goreportcard.com/report/github.com/srikrsna/security-headers) [![Build Status](https://travis-ci.org/srikrsna/security-headers.svg?branch=master)](https://travis-ci.org/srikrsna/security-headers) [![Coverage](http://gocover.io/_badge/github.com/srikrsna/security-headers)](http://gocover.io/github.com/srikrsna/security-headers)
 
 # Security Headers
 
