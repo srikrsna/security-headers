@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"runtime"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 )
@@ -38,11 +38,17 @@ type cspConfig struct {
 	nonceEnabled bool
 
 	headerKey string
+
+	randPool *sync.Pool
 }
 
 type key int
 
 const nonceKey key = iota
+
+var once sync.Once
+
+var randPool sync.Pool
 
 // Middleware return a fuction that takes a http handler and returns a http handler
 func (c *CSP) Middleware() func(http.Handler) http.Handler {
@@ -72,11 +78,13 @@ func (c *CSP) Middleware() func(http.Handler) http.Handler {
 		cfg.headerKey = cspHeader
 	}
 
-	randPool = make(chan rand.Source, runtime.NumCPU())
-
-	for i := 0; i < runtime.NumCPU(); i++ {
-		randPool <- rand.NewSource(time.Now().UnixNano())
-	}
+	once.Do(func() {
+		randPool = sync.Pool{
+			New: func() interface{} {
+				return rand.NewSource(time.Now().UnixNano())
+			},
+		}
+	})
 
 	return cfg.middleware()
 }
@@ -115,11 +123,9 @@ const (
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
 
-var randPool chan rand.Source
-
 func randNonce(byteLen int) string {
 
-	src := <-randPool
+	src := randPool.Get().(rand.Source)
 
 	n := (byteLen*8 + 5) / 6
 
@@ -136,7 +142,7 @@ func randNonce(byteLen int) string {
 		remain--
 	}
 
-	randPool <- src
+	randPool.Put(src)
 
 	for i := len(b) - n; i > 0; i-- {
 		b[n+i-1] = '='
