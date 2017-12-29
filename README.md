@@ -1,3 +1,6 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/srikrsna/security-headers)](https://goreportcard.com/report/github.com/srikrsna/security-headers) [![Build Status](https://travis-ci.org/srikrsna/security-headers.svg?branch=master)](https://travis-ci.org/srikrsna/security-headers) [![Coverage](http://gocover.io/_badge/github.com/srikrsna/security-headers)](http://gocover.io/github.com/srikrsna/security-headers)
+<a href="https://godoc.org/github.com/srikrsna/security-headers"><img src="https://img.shields.io/badge/godoc-reference-blue.svg"></a>
+
 # Security Headers
 
 HTTP middleware for Go providing various security headers. It's 100% compatible with `net/http` package and various other routers. Requires a minimum of Go 1.7
@@ -6,7 +9,11 @@ HTTP middleware for Go providing various security headers. It's 100% compatible 
 
 ### Dynamic Content Security Policy
 
-Headers like Strict Transport Policy seldom change but Content Security Policy's [nonce directive](https://csp.withgoogle.com/docs/strict-csp.html) needs to be randomized for every request. In addition to this, same nonce value must also be on html tags `<scritpt nonce="2hgoUhs/="> ... </script>`.
+Headers like Strict Transport Policy seldom change but Content Security Policy's [nonce directive](https://csp.withgoogle.com/docs/strict-csp.html) needs to be randomized for every request. In addition to this, same nonce value must also be on html tags 
+
+```html
+<scritpt nonce="2hgoUhs/="> ... </script>
+```
 
 Hence it is more practical to perform this at this level than in a reverse proxy. Due to this Content Security Policy Header or CSP has been separated from other security headers.
 
@@ -49,8 +56,8 @@ func main() {
         XSSFilterBlock: true,
 
         HPKPPins: []string{
-            "cUPcTAZWKaASuYWhhneDttWpY3oBAkE3h2+soZS7sWs=",
-            "M8HztCzM3elUxkcjR2S5P4hhyBNf6lHkmjAHKhpGPWE=",
+            "HBkhsug765gdKHhvdj6jdb7jJh/j+soZS7sWs=",
+            "hjshHSHU68hbdkHhvdkgksgsg+jd/jHJ68HBH=",
         },
         HPKPMaxAge:            5184000,
         HPKPReportURI:         "https://www.example.org/hpkp-report",
