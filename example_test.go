@@ -55,7 +55,7 @@ func ExampleSecure_Middleware() {
 	http.ListenAndServe(":8080", s.Middleware()(mux))
 }
 
-func ExampleCSP() {
+func ExampleCSP_Middleware() {
 	mux := http.NewServeMux()
 
 	csp := &secure.CSP{
