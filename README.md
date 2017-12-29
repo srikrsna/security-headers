@@ -52,8 +52,8 @@ func main() {
         XSSFilterBlock: true,
 
         HPKPPins: []string{
-            "cUPcTAZWKaASuYWhhneDttWpY3oBAkE3h2+soZS7sWs=",
-            "M8HztCzM3elUxkcjR2S5P4hhyBNf6lHkmjAHKhpGPWE=",
+            "HBkhsug765gdKHhvdj6jdb7jJh/j+soZS7sWs=",
+            "hjshHSHU68hbdkHhvdkgksgsg+jd/jHJ68HBH=",
         },
         HPKPMaxAge:            5184000,
         HPKPReportURI:         "https://www.example.org/hpkp-report",
