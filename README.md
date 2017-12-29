@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/srikrsna/security-headers)](https://goreportcard.com/report/github.com/srikrsna/security-headers) [![Build Status](https://travis-ci.org/srikrsna/security-headers.svg?branch=master)](https://travis-ci.org/srikrsna/security-headers)
+
 # Security Headers
 
 HTTP middleware for Go providing various security headers. It's 100% compatible with `net/http` package and various other routers. Requires a minimum of Go 1.7
