@@ -218,9 +218,9 @@ func TestSecure(t *testing.T) {
 
 }
 
-func assert(t *testing.T, f interface{}, s interface{}) {
+func assert(t *testing.T, act interface{}, exp interface{}) {
 	// t.Helper() Added in Go 1.9
-	if f != s {
-		t.Errorf("Expected {%v} of type [%v] - Got {%v} of type [%v]", s, reflect.TypeOf(s), f, reflect.TypeOf(f))
+	if act != exp {
+		t.Errorf("Expected {%v} of type [%v] - Got {%v} of type [%v]", exp, reflect.TypeOf(exp), act, reflect.TypeOf(act))
 	}
 }

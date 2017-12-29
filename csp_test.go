@@ -10,8 +10,15 @@ import (
 	"github.com/srikrsna/security-headers"
 )
 
+func TestCSPDefaultNonce(t *testing.T) {
+
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	assert(t, secure.Nonce(req), "")
+}
+
 func TestCSPNonce(t *testing.T) {
-	for byteAmount := 1; byteAmount < 2; byteAmount++ {
+	for byteAmount := 1; byteAmount < 20; byteAmount++ {
 		t.Run(fmt.Sprintf("TestCSPNonceByteAmount%d", byteAmount), func(t *testing.T) {
 			s := secure.CSP{
 				Value:      "default-src 'self' {{ . }}; script-src 'strict-dynamic' {{ . }}",
