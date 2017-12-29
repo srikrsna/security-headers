@@ -1,4 +1,5 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/srikrsna/security-headers)](https://goreportcard.com/report/github.com/srikrsna/security-headers) [![Build Status](https://travis-ci.org/srikrsna/security-headers.svg?branch=master)](https://travis-ci.org/srikrsna/security-headers) [![Coverage](http://gocover.io/_badge/github.com/srikrsna/security-headers)](http://gocover.io/github.com/srikrsna/security-headers)
+<a href="https://godoc.org/github.com/srikrsna/security-headers"><img src="https://img.shields.io/badge/godoc-reference-blue.svg"></a>
 
 # Security Headers
 
