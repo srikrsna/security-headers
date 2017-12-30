@@ -21,8 +21,8 @@ func TestCSPNonce(t *testing.T) {
 	for byteAmount := 1; byteAmount < 20; byteAmount++ {
 		t.Run(fmt.Sprintf("TestCSPNonceByteAmount%d", byteAmount), func(t *testing.T) {
 			s := secure.CSP{
-				Value:      "default-src 'self' {{ . }}; script-src 'strict-dynamic' {{ . }}",
-				ByteAmount: byteAmount,
+				Value:    "default-src 'self' {{ . }}; script-src 'strict-dynamic' {{ . }}",
+				ByteSize: byteAmount,
 			}
 
 			res := httptest.NewRecorder()
@@ -93,8 +93,8 @@ func TestCSPWrongTemplate(t *testing.T) {
 	}()
 
 	csp := secure.CSP{
-		Value:      "{{ .Name }}",
-		ByteAmount: 32,
+		Value:    "{{ .Name }}",
+		ByteSize: 32,
 	}
 
 	res := httptest.NewRecorder()
@@ -112,8 +112,8 @@ func TestCSPNilHandler(t *testing.T) {
 	}()
 
 	csp := secure.CSP{
-		Value:      "script-src 'none';",
-		ByteAmount: 32,
+		Value:    "script-src 'none';",
+		ByteSize: 32,
 	}
 
 	res := httptest.NewRecorder()

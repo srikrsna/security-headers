@@ -48,11 +48,12 @@ func BenchmarkCSP(b *testing.B) {
 		base-uri 'none';
 		report-uri https://your-report-collector.example.com/;`,
 
-		ByteAmount: 16,
+		ByteSize: 16,
 	}
 
 	handler := csp.Middleware()(testHandler)
 
+	b.ReportAllocs()
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
