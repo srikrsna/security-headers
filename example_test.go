@@ -59,8 +59,8 @@ func ExampleCSP_Middleware() {
 	mux := http.NewServeMux()
 
 	csp := &secure.CSP{
-		Value:      `object-src 'none'; script-src {{ . }} 'strict-dynamic'; base-uri 'self'; report-uri https://appointy.com/_csp;`,
-		ByteAmount: 8,
+		Value:    `object-src 'none'; script-src {{ . }} 'strict-dynamic'; base-uri 'self'; report-uri https://appointy.com/_csp;`,
+		ByteSize: 8,
 	}
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

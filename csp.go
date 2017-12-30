@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -17,18 +18,21 @@ const (
 	cspReportOnlyHeader = "Content-Security-Policy-Report-Only"
 )
 
-// CSP is the middleware comntaining the csp headers
+// CSP is used to configure the Content Security Policy Middleware. For more about csp please refer the mozilla docs.
 type CSP struct {
 	// Value is the CSP header value.Eg: script-src {{ . }} 'strict-dynamic'; object-src 'none';
 	// If the Value contains '{{ . }}', it will be replaced by a dynamic nonce {{ . }} -> 'nonce-jagflah+==' every request.
 	//
-	// Generated nonce can be obtained using the `Nonce` function.
+	// Generated nonce can be obtained using the `Nonce(*http.Request)` function.
 	Value string
 
-	// ByteAmount is the byte size of the nonce being generated defaults to 16
-	ByteAmount int
+	// ByteSize is the size of the nonce being generated in bytes. If passed <= '0' it will chnage to 16.
+	// Default is 16.
+	ByteSize int
 
-	// ReportOnly will send report only header. Default is false.
+	// ReportOnly will send report only header (Content-Security-Policy-Report-Only) instead of the regular header (Content-Security-Policy-Report-Only).
+	// Enabling this option will result in browsers only reporting violation. Report-URI must be set along with this. Default is false.
+	// Note: Package will not check for report-uri
 	ReportOnly bool
 }
 
@@ -46,11 +50,19 @@ type key int
 
 const nonceKey key = iota
 
-var once sync.Once
+var randPool = sync.Pool{
+	New: func() interface{} {
+		return rand.NewSource(time.Now().UnixNano())
+	},
+}
 
-var randPool sync.Pool
+var bufferPool = sync.Pool{
+	New: func() interface{} {
+		return new(bytes.Buffer)
+	},
+}
 
-// Middleware return a fuction that takes a http handler and returns a http handler
+// Middleware return a fuction that adds the configured csp headers, stores the nonce in th request context if configures, and passes the request to the next handler
 func (c *CSP) Middleware() func(http.Handler) http.Handler {
 
 	cfg := cspConfig{}
@@ -67,24 +79,16 @@ func (c *CSP) Middleware() func(http.Handler) http.Handler {
 
 	cfg.nonceEnabled = strings.Contains(cfg.template, "%[1]s")
 
-	if c.ByteAmount <= 0 {
-		c.ByteAmount = 16
+	if c.ByteSize <= 0 {
+		c.ByteSize = 16
 	}
-	cfg.byteAmount = c.ByteAmount
+	cfg.byteAmount = c.ByteSize
 
 	if c.ReportOnly {
 		cfg.headerKey = cspReportOnlyHeader
 	} else {
 		cfg.headerKey = cspHeader
 	}
-
-	once.Do(func() {
-		randPool = sync.Pool{
-			New: func() interface{} {
-				return rand.NewSource(time.Now().UnixNano())
-			},
-		}
-	})
 
 	return cfg.middleware()
 }
@@ -99,12 +103,18 @@ func (cfg *cspConfig) middleware() func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			if cfg.nonceEnabled {
-				// nonce := randNonce(rand.NewSource(time.Now().UnixNano()), cfg.byteAmount)
-				nonce := randNonce(cfg.byteAmount)
-				ctx := context.WithValue(r.Context(), nonceKey, nonce)
+				buff := bufferPool.Get().(*bytes.Buffer) // TODO: Go 1.10 -> Change bytes.Buffer to strings.Builder
+
+				buff.Reset()
+				RandNonce(buff, cfg.byteAmount)
+
+				nonce := buff.Bytes()
+				w.Header().Add(cfg.headerKey, fmt.Sprintf(cfg.template, nonce))
+
+				ctx := context.WithValue(r.Context(), nonceKey, string(nonce))
 				*r = *r.WithContext(ctx)
 
-				w.Header().Add(cfg.headerKey, fmt.Sprintf(cfg.template, nonce))
+				bufferPool.Put(buff)
 
 				next.ServeHTTP(w, r)
 				return
@@ -123,19 +133,21 @@ const (
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
 
-func randNonce(byteLen int) string {
+// RandNonce writes the randomly generated nonce of length 'b' to the provided ByteWriter.
+// Typical usecase would be to use this method to create own handlers/middlewares for packages apart from net/http.
+// Note: To get the nonce associated with the present request use `Nonce(*http.Request)` method.
+func RandNonce(w io.ByteWriter, b int) {
 
 	src := randPool.Get().(rand.Source)
 
-	n := (byteLen*8 + 5) / 6
+	n := (b*8 + 5) / 6
 
-	b := make([]byte, (n+3) & ^3)
 	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
 		if remain == 0 {
 			cache, remain = src.Int63(), letterIdxMax
 		}
 		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
-			b[i] = letterBytes[idx]
+			w.WriteByte(letterBytes[idx])
 			i--
 		}
 		cache >>= letterIdxBits
@@ -144,11 +156,9 @@ func randNonce(byteLen int) string {
 
 	randPool.Put(src)
 
-	for i := len(b) - n; i > 0; i-- {
-		b[n+i-1] = '='
+	for i := ((n + 3) & ^3) - n; i > 0; i-- {
+		w.WriteByte('=')
 	}
-
-	return string(b)
 }
 
 // Nonce returns the nonce value associated with the present request. If no nonce has been generated it returns an empty string.
