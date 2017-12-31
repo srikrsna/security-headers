@@ -14,14 +14,14 @@ func TestCSPDefaultNonce(t *testing.T) {
 
 	req, _ := http.NewRequest("GET", "/foo", nil)
 
-	assert(t, secure.Nonce(req), "")
+	assert(t, secure.Nonce(req.Context()), "")
 }
 
 func TestCSPNonce(t *testing.T) {
 	for byteAmount := 1; byteAmount < 20; byteAmount++ {
 		t.Run(fmt.Sprintf("TestCSPNonceByteAmount%d", byteAmount), func(t *testing.T) {
 			s := secure.CSP{
-				Value:    "default-src 'self' {{ . }}; script-src 'strict-dynamic' {{ . }}",
+				Value:    "default-src 'self' {{nonce}}; script-src 'strict-dynamic' {{nonce}}",
 				ByteSize: byteAmount,
 			}
 
@@ -31,8 +31,8 @@ func TestCSPNonce(t *testing.T) {
 			s.Middleware()(testHandler).ServeHTTP(res, req)
 
 			assert(t, res.Code, http.StatusOK)
-			assert(t, len(secure.Nonce(req)), base64.StdEncoding.EncodedLen(byteAmount))
-			assert(t, res.Header().Get("Content-Security-Policy"), fmt.Sprintf("default-src 'self' 'nonce-%[1]s'; script-src 'strict-dynamic' 'nonce-%[1]s'", secure.Nonce(req)))
+			assert(t, len(secure.Nonce(req.Context())), base64.RawStdEncoding.EncodedLen(byteAmount))
+			assert(t, res.Header().Get("Content-Security-Policy"), fmt.Sprintf("default-src 'self' 'nonce-%[1]s'; script-src 'strict-dynamic' 'nonce-%[1]s'", secure.Nonce(req.Context())))
 		})
 	}
 }
@@ -85,13 +85,6 @@ func TestCSPReportOnly(t *testing.T) {
 }
 
 func TestCSPWrongTemplate(t *testing.T) {
-	defer func() {
-		err := recover()
-		if err == nil {
-			t.Errorf("Expected error")
-		}
-	}()
-
 	csp := secure.CSP{
 		Value:    "{{ .Name }}",
 		ByteSize: 32,
@@ -101,6 +94,8 @@ func TestCSPWrongTemplate(t *testing.T) {
 	req := httptest.NewRequest("GET", "/", nil)
 
 	csp.Middleware()(testHandler).ServeHTTP(res, req)
+
+	assert(t, res.Header().Get("Content-Security-Policy"), "{{ .Name }}")
 }
 
 func TestCSPNilHandler(t *testing.T) {

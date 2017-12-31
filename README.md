@@ -22,12 +22,12 @@ func main() {
     mux := http.NewServeMux()
 
     csp := &secure.CSP{
-        Value:      `object-src 'none'; script-src {{ . }} 'strict-dynamic'; base-uri 'self'; report-uri https://example.com/_csp;`,
+        Value:      `object-src 'none'; script-src {{nonce}} 'strict-dynamic'; base-uri 'self'; report-uri https://example.com/_csp;`,
         ByteAmount: 8,
     }
 
     mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "Base64 nonce: %s", secure.Nonce(r)) // secure.Nonce(*http.Request) returns Nonce associated with the present request Object
+        fmt.Fprintf(w, "Base64 nonce: %s", secure.Nonce(r.Context())) // secure.Nonce(*http.Request) returns Nonce associated with the present request Object
     })
 
     http.ListenAndServe(":8080", csp.Middleware()(mux))

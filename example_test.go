@@ -59,12 +59,12 @@ func ExampleCSP_Middleware() {
 	mux := http.NewServeMux()
 
 	csp := &secure.CSP{
-		Value:    `object-src 'none'; script-src {{ . }} 'strict-dynamic'; base-uri 'self'; report-uri https://appointy.com/_csp;`,
+		Value:    `object-src 'none'; script-src {{nonce}} 'strict-dynamic'; base-uri 'self'; report-uri https://appointy.com/_csp;`,
 		ByteSize: 8,
 	}
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Base64 nonce: %s", secure.Nonce(r))
+		fmt.Fprintf(w, "Base64 nonce: %s", secure.Nonce(r.Context()))
 	})
 
 	http.ListenAndServe(":8080", csp.Middleware()(mux))

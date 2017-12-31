@@ -44,7 +44,7 @@ func BenchmarkSecure(b *testing.B) {
 func BenchmarkCSP(b *testing.B) {
 	csp := &secure.CSP{
 		Value: `object-src 'none';
-		script-src {{ . }} 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' https: http:;
+		script-src {{nonce}} 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' https: http:;
 		base-uri 'none';
 		report-uri https://your-report-collector.example.com/;`,
 

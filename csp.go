@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"text/template"
 	"time"
 )
 
@@ -18,12 +17,17 @@ const (
 	cspReportOnlyHeader = "Content-Security-Policy-Report-Only"
 )
 
+// NonceToken is the string token that gets replaced by the middleware with a dynamic nonce directive
+const NonceToken = "{{nonce}}"
+
+var nonceReplacer = strings.NewReplacer(NonceToken, "'nonce-%[1]s'")
+
 // CSP is used to configure the Content Security Policy Middleware. For more about csp please refer the mozilla docs.
 type CSP struct {
-	// Value is the CSP header value.Eg: script-src {{ . }} 'strict-dynamic'; object-src 'none';
-	// If the Value contains '{{ . }}', it will be replaced by a dynamic nonce {{ . }} -> 'nonce-jagflah+==' every request.
+	// Value is the CSP header value.Eg: script-src {{nonce}} 'strict-dynamic'; object-src 'none';
+	// If the Value contains '{{nonce}}', it will be replaced by a dynamic nonce {{nonce}} -> 'nonce-jagflah+==' every request.
 	//
-	// Generated nonce can be obtained using the `Nonce(*http.Request)` function.
+	// Generated nonce can be obtained using the `Nonce(context.Context)` function.
 	Value string
 
 	// ByteSize is the size of the nonce being generated in bytes. If passed <= '0' it will chnage to 16.
@@ -38,7 +42,7 @@ type CSP struct {
 
 type cspConfig struct {
 	template     string
-	byteAmount   int
+	byteSize     int
 	nonceEnabled bool
 
 	headerKey string
@@ -67,22 +71,14 @@ func (c *CSP) Middleware() func(http.Handler) http.Handler {
 
 	cfg := cspConfig{}
 
-	tmpl := template.Must(template.New("csp").Parse(c.Value))
-
-	var buffer bytes.Buffer
-
-	if err := tmpl.Execute(&buffer, "'nonce-%[1]s'"); err != nil {
-		panic(err)
-	}
-
-	cfg.template = buffer.String()
+	cfg.template = nonceReplacer.Replace(c.Value)
 
 	cfg.nonceEnabled = strings.Contains(cfg.template, "%[1]s")
 
 	if c.ByteSize <= 0 {
 		c.ByteSize = 16
 	}
-	cfg.byteAmount = c.ByteSize
+	cfg.byteSize = c.ByteSize
 
 	if c.ReportOnly {
 		cfg.headerKey = cspReportOnlyHeader
@@ -106,9 +102,10 @@ func (cfg *cspConfig) middleware() func(http.Handler) http.Handler {
 				buff := bufferPool.Get().(*bytes.Buffer) // TODO: Go 1.10 -> Change bytes.Buffer to strings.Builder
 
 				buff.Reset()
-				RandNonce(buff, cfg.byteAmount)
+				RandNonce(buff, cfg.byteSize)
 
 				nonce := buff.Bytes()
+
 				w.Header().Add(cfg.headerKey, fmt.Sprintf(cfg.template, nonce))
 
 				ctx := context.WithValue(r.Context(), nonceKey, string(nonce))
@@ -134,8 +131,8 @@ const (
 )
 
 // RandNonce writes the randomly generated nonce of length 'b' to the provided ByteWriter.
-// Typical usecase would be to use this method to create own handlers/middlewares for packages apart from net/http.
-// Note: To get the nonce associated with the present request use `Nonce(*http.Request)` method.
+// Typical usecase would be to use this method to create own handlers/middlewares for packages that don't support net/http.
+// Note: To get the nonce associated with the present request use `Nonce(context.Context)` method.
 func RandNonce(w io.ByteWriter, b int) {
 
 	src := randPool.Get().(rand.Source)
@@ -155,15 +152,11 @@ func RandNonce(w io.ByteWriter, b int) {
 	}
 
 	randPool.Put(src)
-
-	for i := ((n + 3) & ^3) - n; i > 0; i-- {
-		w.WriteByte('=')
-	}
 }
 
-// Nonce returns the nonce value associated with the present request. If no nonce has been generated it returns an empty string.
-func Nonce(r *http.Request) string {
-	if val, ok := r.Context().Value(nonceKey).(string); ok {
+// Nonce returns the nonce value present in the context. If no nonce is present it returns an empty string.
+func Nonce(c context.Context) string {
+	if val, ok := c.Value(nonceKey).(string); ok {
 		return val
 	}
 
