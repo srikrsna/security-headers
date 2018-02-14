@@ -12,7 +12,7 @@ HTTP middleware for Go providing various security headers. It's 100% compatible 
 Headers like Strict Transport Policy seldom change but Content Security Policy's [nonce directive](https://csp.withgoogle.com/docs/strict-csp.html) needs to be randomized for every request. In addition to this, same nonce value must also be on html tags 
 
 ```html
-<scritpt nonce="2hgoUhs/="> ... </script>
+<script nonce="2hgoUhs/="> ... </script>
 ```
 
 Hence it is more practical to perform this at this level than in a reverse proxy. Due to this Content Security Policy Header or CSP has been separated from other security headers.
