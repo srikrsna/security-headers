@@ -99,7 +99,7 @@ func (cfg *cspConfig) middleware() func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			if cfg.nonceEnabled {
-				buff := bufferPool.Get().(*bytes.Buffer) // TODO: Go 1.10 -> Change bytes.Buffer to strings.Builder
+				buff := bufferPool.Get().(*bytes.Buffer)
 
 				buff.Reset()
 				RandNonce(buff, cfg.byteSize)
@@ -109,7 +109,7 @@ func (cfg *cspConfig) middleware() func(http.Handler) http.Handler {
 				w.Header().Add(cfg.headerKey, fmt.Sprintf(cfg.template, nonce))
 
 				ctx := context.WithValue(r.Context(), nonceKey, string(nonce))
-				*r = *r.WithContext(ctx)
+				r = r.WithContext(ctx)
 
 				bufferPool.Put(buff)
 

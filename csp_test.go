@@ -28,11 +28,15 @@ func TestCSPNonce(t *testing.T) {
 			res := httptest.NewRecorder()
 			req, _ := http.NewRequest("GET", "/foo", nil)
 
-			s.Middleware()(testHandler).ServeHTTP(res, req)
+			nonce := ""
+
+			s.Middleware()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				nonce = secure.Nonce(r.Context())
+				assert(t, len(secure.Nonce(r.Context())), base64.RawStdEncoding.EncodedLen(byteAmount))
+			})).ServeHTTP(res, req)
 
 			assert(t, res.Code, http.StatusOK)
-			assert(t, len(secure.Nonce(req.Context())), base64.RawStdEncoding.EncodedLen(byteAmount))
-			assert(t, res.Header().Get("Content-Security-Policy"), fmt.Sprintf("default-src 'self' 'nonce-%[1]s'; script-src 'strict-dynamic' 'nonce-%[1]s'", secure.Nonce(req.Context())))
+			assert(t, res.Header().Get("Content-Security-Policy"), fmt.Sprintf("default-src 'self' 'nonce-%[1]s'; script-src 'strict-dynamic' 'nonce-%[1]s'", nonce))
 		})
 	}
 }
