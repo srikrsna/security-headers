@@ -27,7 +27,7 @@ func main() {
     }
 
     mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "Base64 nonce: %s", secure.Nonce(r.Context())) // secure.Nonce(*http.Request) returns Nonce associated with the present request Object
+        fmt.Fprintf(w, "Base64 nonce: %s", secure.Nonce(r.Context())) // secure.Nonce(context.Context) returns Nonce associated with the present request Object
     })
 
     http.ListenAndServe(":8080", csp.Middleware()(mux))
