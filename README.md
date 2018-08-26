@@ -9,7 +9,7 @@ HTTP middleware for Go providing various security headers. It's 100% compatible 
 
 ### Dynamic Content Security Policy
 
-Headers like Strict Transport Policy seldom change but Content Security Policy's [nonce directive](https://csp.withgoogle.com/docs/strict-csp.html) needs to be randomized for every request. In addition to this, same nonce value must also be on html tags 
+Headers like Strict Transport Policy seldom change but Content Security Policy's [nonce directive](https://csp.withgoogle.com/docs/strict-csp.html) needs to be randomized for every request. In addition to this, same nonce value must also be on html tags
 
 ```html
 <script nonce="2hgoUhs/="> ... </script>
@@ -17,7 +17,7 @@ Headers like Strict Transport Policy seldom change but Content Security Policy's
 
 Hence it is more practical to perform this at this level than in a reverse proxy. Due to this Content Security Policy Header or CSP has been separated from other security headers.
 
-~~~ go
+```go
 func main() {
     mux := http.NewServeMux()
 
@@ -32,13 +32,13 @@ func main() {
 
     http.ListenAndServe(":8080", csp.Middleware()(mux))
 }
-~~~
+```
 
 ### Static Headers
 
 Headers that are better off implemented in a Reverse Proxy, such as Ngnix, in case of one.
 
-~~~ go
+```go
 // main.go
 func main() {
     mux := http.NewServeMux()
@@ -63,6 +63,10 @@ func main() {
         HPKPReportURI:         "https://www.example.org/hpkp-report",
         HPKPIncludeSubdomains: true,
 
+        ExpectCTMaxAge:    5184000,
+        ExpectCTEnforce:   true,
+        ExpectCTReportUri: "https://www.example.org/ct-report",
+
         ReferrerPolicy: secure.ReferrerStrictOriginWhenCrossOrigin,
     }
 
@@ -72,7 +76,7 @@ func main() {
 
     http.ListenAndServe(":8080", s.Middleware()(mux))
 }
-~~~
+```
 
 ### Configuration options
 
