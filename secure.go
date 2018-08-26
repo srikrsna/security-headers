@@ -18,6 +18,8 @@ const (
 	hpkpReportOnlyHeader = "Public-Key-Pins-Report-Only"
 
 	referrerPolicyHeader = "Referrer-Policy"
+
+	expectCTHeader = "Expect-CT"
 )
 
 const (
@@ -32,6 +34,10 @@ const (
 
 const (
 	hpkpIncludeSubdomainValue = "; includeSubDomains"
+)
+
+const (
+	expectCTEnforceValue = ", enforce"
 )
 
 type frameOption string
@@ -103,6 +109,10 @@ type Secure struct {
 	HPKPIncludeSubdomains bool
 	HPKPReportURI         string
 
+	ExpectCTMaxAge    int
+	ExpectCTEnforce   bool
+	ExpectCTReportUri string
+
 	ReferrerPolicy referrerPolicy
 }
 
@@ -123,6 +133,9 @@ type config struct {
 
 	shouldReferrer      bool
 	referrerPolicyValue string
+
+	shouldCT      bool
+	expectCTValue string
 }
 
 // Middleware returns a function that takes a http.Middleware returns a http.Middleware
@@ -191,6 +204,19 @@ func (s *Secure) Middleware() func(http.Handler) http.Handler {
 		cfg.referrerPolicyValue = string(s.ReferrerPolicy)
 	}
 
+	if s.ExpectCTMaxAge > 0 {
+		cfg.shouldCT = true
+		cfg.expectCTValue = fmt.Sprintf("max-age=%d", s.ExpectCTMaxAge)
+
+		if s.ExpectCTEnforce {
+			cfg.expectCTValue += expectCTEnforceValue
+		}
+
+		if len(s.ExpectCTReportUri) > 0 {
+			cfg.expectCTValue += ", report-uri=\"" + s.ExpectCTReportUri + "\""
+		}
+	}
+
 	return middleware(&cfg)
 }
 
@@ -225,6 +251,10 @@ func middleware(cfg *config) func(next http.Handler) http.Handler {
 
 			if cfg.shouldReferrer {
 				w.Header().Add(referrerPolicyHeader, cfg.referrerPolicyValue)
+			}
+
+			if cfg.shouldCT {
+				w.Header().Add(expectCTHeader, cfg.expectCTValue)
 			}
 
 			next.ServeHTTP(w, r)

@@ -202,6 +202,17 @@ func TestSecure(t *testing.T) {
 			outputHeaderKey:   "Referrer-Policy",
 			outputHeaderValue: "strict-origin",
 		},
+		{
+			name: "TestExpectCT",
+			s: &secure.Secure{
+				ExpectCTMaxAge:    86400,
+				ExpectCTEnforce:   true,
+				ExpectCTReportUri: "https://foo.example/report",
+			},
+
+			outputHeaderKey:   "Expect-CT",
+			outputHeaderValue: `max-age=86400, enforce, report-uri="https://foo.example/report"`,
+		},
 	}
 
 	for _, tc := range tt {
