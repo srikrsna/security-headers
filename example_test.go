@@ -5,26 +5,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/go-chi/chi"
 	"github.com/srikrsna/security-headers"
 )
-
-// Sample showing integration with the awesome router go-chi
-func Example_chi() {
-	mux := chi.NewMux()
-
-	s := &secure.Secure{
-		ContentTypeNoSniff: true,
-	}
-
-	mux.Use(s.Middleware())
-
-	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "Ok with Headers")
-	})
-
-	http.ListenAndServe(":8080", mux)
-}
 
 // Sample showing integration with the net/http
 func Example_netHttp() {
