@@ -3,6 +3,8 @@ package secure
 import (
 	"bytes"
 	"context"
+	crand "crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"math/rand"
@@ -42,7 +44,7 @@ type CSP struct {
 
 type cspConfig struct {
 	template     string
-	byteSize     int
+	byteSize     int64
 	nonceEnabled bool
 
 	headerKey string
@@ -78,7 +80,7 @@ func (c *CSP) Middleware() func(http.Handler) http.Handler {
 	if c.ByteSize <= 0 {
 		c.ByteSize = 16
 	}
-	cfg.byteSize = c.ByteSize
+	cfg.byteSize = int64(c.ByteSize)
 
 	if c.ReportOnly {
 		cfg.headerKey = cspReportOnlyHeader
@@ -102,13 +104,13 @@ func (cfg *cspConfig) middleware() func(http.Handler) http.Handler {
 				buff := bufferPool.Get().(*bytes.Buffer)
 
 				buff.Reset()
-				RandNonce(buff, cfg.byteSize)
+				CryptoRandNonce(buff, cfg.byteSize)
 
 				nonce := buff.Bytes()
 
 				w.Header().Add(cfg.headerKey, fmt.Sprintf(cfg.template, nonce))
 
-				ctx := context.WithValue(r.Context(), nonceKey, string(nonce))
+				ctx := WithNonce(r.Context(), string(nonce))
 				r = r.WithContext(ctx)
 
 				bufferPool.Put(buff)
@@ -133,6 +135,8 @@ const (
 // RandNonce writes the randomly generated nonce of length 'b' to the provided ByteWriter.
 // Typical usecase would be to use this method to create own handlers/middlewares for packages that don't support net/http.
 // Note: To get the nonce associated with the present request use `Nonce(context.Context)` method.
+//
+// Important: This function is no longer used to generate the Nonce. Please refer to this issue: https://github.com/srikrsna/security-headers/issues/5
 func RandNonce(w io.ByteWriter, b int) {
 
 	src := randPool.Get().(rand.Source)
@@ -154,6 +158,20 @@ func RandNonce(w io.ByteWriter, b int) {
 	randPool.Put(src)
 }
 
+// CryptoRandNonce writes the cryptographically generated random nonce of length 'n' to the provided Writer.
+// Typical usecase would be to use this method to create own handlers/middlewares for packages that don't support net/http.
+// Note: To get the nonce associated with the present request use `Nonce(context.Context)` method.
+func CryptoRandNonce(w io.Writer, n int64) {
+	b := make([]byte, n)
+	if _, err := io.ReadFull(crand.Reader, b); err != nil {
+		panic("secure: " + err.Error())
+	}
+
+	enc := base64.NewEncoder(base64.RawStdEncoding, w)
+	enc.Write(b)
+	enc.Close()
+}
+
 // Nonce returns the nonce value present in the context. If no nonce is present it returns an empty string.
 func Nonce(c context.Context) string {
 	if val, ok := c.Value(nonceKey).(string); ok {
@@ -161,4 +179,9 @@ func Nonce(c context.Context) string {
 	}
 
 	return ""
+}
+
+// WithNonce is convenience method that can be
+func WithNonce(ctx context.Context, n string) context.Context {
+	return context.WithValue(ctx, nonceKey, n)
 }
